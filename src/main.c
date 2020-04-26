@@ -103,7 +103,6 @@ int main(int argc, char** args)
    int result;
    int temperature;
    unsigned int fan_status = FAN_OFF;
-   
    is_working = true;
    result = init_gpio();
    signal(SIGINT, signal_handler);
