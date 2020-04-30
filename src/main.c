@@ -10,6 +10,7 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <errno.h>
+#include "soc_functions.h"
 
 #define STRING_SIZE     (50U)
 #define GPIO_PORT       ('A')
@@ -18,16 +19,6 @@
 #define GENERIC_ERROR   (-1)
 #define FAN_OFF         (0U)
 #define FAN_ON          !FAN_OFF
-/*
- * @todo Add module files and header file instead of conditional compilation.
- */
-#if defined (BROADCOM)
-#define CLI_ARGUMENT_COUNT 3
-#elif defined (SUNXI)
-#define CLI_ARGUMENT_COUNT 4
-#elif defined (UNKNOWN)
-#error "Unknown Chipset"
-#endif
 
 volatile static bool is_working;
 
@@ -119,36 +110,6 @@ void signal_handler(int signal)
     is_working = false;
 }
 
-void print_syntax(void)
-{
-#if defined (BROADCOM)
-    printf( "********* Command line syntax for Broadcom SoC(mostly Raspberry) boards ********\n"
-            "* ./thermostat PIN_NUMBER FAN_OFF_TEMPERATURE FAN_ON_TEMPERATURE               *\n"
-            "* PIN_NUMBER = BCM pin number. It is named GPIOx in the official schematic.    *\n"
-            "* FAN_OFF_TEMPERATURE = Temperature value of turning off the fan.              *\n"
-            "*                       This must be lower than ON temperature                 *\n"
-            "* FAN_ON_TEMPERATURE  = Temperature value of turning on the fan.               *\n"
-            "*                       This must be higher than OFF temperature               *\n"
-            "* Example usage: \033[0;33m$ \033[0;36mthermostat 6 35.0 36.0\033[0m                                      *\n"
-            "********************************************************************************\n"
-            );
-#elif defined (SUNXI)
-    printf( "********** Command line syntax for SunXi SoC(mostly Other Pi's) boards *********\n"
-            "* ./thermostat PORT_NO PIN_NUMBER FAN_OFF_TEMPERATURE FAN_ON_TEMPERATURE       *\n"
-            "* PORT_NO = sunxi Port name usually named A-G. Refer to the device datasheet   *\n"
-            "* PIN_NUMBER = sunxi pin number, usually put after port name A7, B5, etc.      *\n"
-            "* FAN_OFF_TEMPERATURE = Temperature value of turning off the fan.              *\n"
-            "*                       This must be lower than ON temperature                 *\n"
-            "* FAN_ON_TEMPERATURE  = Temperature value of turning on the fan.               *\n"
-            "*                       This must be higher than OFF temperature               *\n"
-            "* Example usage: \033[0;33m$ \033[0;36mthermostat A 6 35.0 36.0\033[0m                                    *\n"
-           "********************************************************************************\n"
-            );
-
-#endif
-
-}
-
 int main(int argc, char **args)
 {
     char gpio_str[STRING_SIZE];
@@ -156,7 +117,7 @@ int main(int argc, char **args)
     int temperature;
     unsigned int fan_status = FAN_OFF;
 
-    if (CLI_ARGUMENT_COUNT != argc)
+    if (g_argumentCount != argc)
     {
         print_syntax();
     }
