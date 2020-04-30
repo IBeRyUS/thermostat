@@ -18,11 +18,15 @@
 #define GENERIC_ERROR   (-1)
 #define FAN_OFF         (0U)
 #define FAN_ON          !FAN_OFF
-
+/*
+ * @todo Add module files and header file instead of conditional compilation.
+ */
 #if defined (BROADCOM)
 #define CLI_ARGUMENT_COUNT 3
 #elif defined (SUNXI)
 #define CLI_ARGUMENT_COUNT 4
+#elif defined (UNKNOWN)
+#error "Unknown Chipset"
 #endif
 
 volatile static bool is_working;
@@ -117,15 +121,14 @@ void signal_handler(int signal)
 
 void print_syntax(void)
 {
-
 #if defined (BROADCOM)
     printf( "********* Command line syntax for Broadcom SoC(mostly Raspberry) boards ********\n"
             "* ./thermostat PIN_NUMBER FAN_OFF_TEMPERATURE FAN_ON_TEMPERATURE               *\n"
             "* PIN_NUMBER = BCM pin number. It is named GPIOx in the official schematic.    *\n"
             "* FAN_OFF_TEMPERATURE = Temperature value of turning off the fan.              *\n"
             "*                       This must be lower than ON temperature                 *\n"
-            "* FAN_ON_TEMPERATURE = Temperature value of turning on the fan.                *\n"
-            "*                      This must be higher than OFF temperature                *\n"
+            "* FAN_ON_TEMPERATURE  = Temperature value of turning on the fan.               *\n"
+            "*                       This must be higher than OFF temperature               *\n"
             "* Example usage: \033[0;33m$ \033[0;36mthermostat 6 35.0 36.0\033[0m                                      *\n"
             "********************************************************************************\n"
             );
@@ -136,8 +139,8 @@ void print_syntax(void)
             "* PIN_NUMBER = sunxi pin number, usually put after port name A7, B5, etc.      *\n"
             "* FAN_OFF_TEMPERATURE = Temperature value of turning off the fan.              *\n"
             "*                       This must be lower than ON temperature                 *\n"
-            "* FAN_ON_TEMPERATURE = Temperature value of turning on the fan.                *\n"
-            "*                      This must be higher than OFF temperature                *\n"
+            "* FAN_ON_TEMPERATURE  = Temperature value of turning on the fan.               *\n"
+            "*                       This must be higher than OFF temperature               *\n"
             "* Example usage: \033[0;33m$ \033[0;36mthermostat A 6 35.0 36.0\033[0m                                    *\n"
            "********************************************************************************\n"
             );
@@ -157,36 +160,39 @@ int main(int argc, char **args)
     {
         print_syntax();
     }
-    is_working = init_gpio();
-    signal(SIGINT, signal_handler);
-    signal(SIGHUP, signal_handler);
-
-    snprintf(gpio_str, STRING_SIZE, "/sys/class/gpio/gpio%u/value", GPIO_NUMBER);
-    printf("value_path=%s\n", gpio_str);
-    fd = open(gpio_str, O_RDWR);
-    while (is_working)
+    else
     {
-        temperature = read_temp();
-        if (temperature > 38000)
+        is_working = init_gpio();
+        signal(SIGINT, signal_handler);
+        signal(SIGHUP, signal_handler);
+
+        snprintf(gpio_str, STRING_SIZE, "/sys/class/gpio/gpio%u/value", GPIO_NUMBER);
+        printf("value_path=%s\n", gpio_str);
+        fd = open(gpio_str, O_RDWR);
+        while (is_working)
         {
-            if (FAN_OFF == fan_status)
+            temperature = read_temp();
+            if (temperature > 38000)
             {
-                write(fd, "1", 1);
-                fan_status = FAN_ON;
-                printf("Fan on temp = %d\n", temperature);
+                if (FAN_OFF == fan_status)
+                {
+                    write(fd, "1", 1);
+                    fan_status = FAN_ON;
+                    printf("Fan on temp = %d\n", temperature);
+                }
             }
-        }
-        else if (temperature < 36000)
-        {
-            if (FAN_OFF != fan_status)
+            else if (temperature < 36000)
             {
-                write(fd, "0", 1U);
-                fan_status = FAN_OFF;
-                printf("Fan off temp = %d\n", temperature);
+                if (FAN_OFF != fan_status)
+                {
+                    write(fd, "0", 1U);
+                    fan_status = FAN_OFF;
+                    printf("Fan off temp = %d\n", temperature);
+                }
             }
+            sleep(1U);
         }
-        sleep(1U);
+        printf("Closing thermal control\n");
+        close(fd);
     }
-    printf("Closing thermal control\n");
-    close(fd);
 }
