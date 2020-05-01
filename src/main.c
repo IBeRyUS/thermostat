@@ -10,7 +10,7 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <errno.h>
-#include "soc_functions.h"
+#include "soc_port.h"
 
 #define STRING_SIZE     (50U)
 #define GPIO_PORT       ('A')
@@ -105,6 +105,13 @@ int read_temp(void)
     close(temperature_fd);
     return (atoi(gpio_str));
 }
+
+void print_syntax(void)
+{
+    printf("%s", help_string);
+}
+
+
 void signal_handler(int signal)
 {
     is_working = false;
