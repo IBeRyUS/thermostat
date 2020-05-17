@@ -74,9 +74,9 @@ bool socPort_parseArguments(int argc, char **args, temperatureControl_t *const o
             )
         {
             /* Arguments are OK */
-            out_params->gpioSysFsNumber = temp_sysfs_number;
-            out_params->hystLowTemp     = temp_low_temperature;
-            out_params->hystHighTemp    = temp_high_temperature;
+            out_params->gpio_sysfs_number = temp_sysfs_number;
+            out_params->low_temperature     = temp_low_temperature;
+            out_params->high_temperature    = temp_high_temperature;
             ret_val = true;
         }
     }

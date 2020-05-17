@@ -44,9 +44,6 @@
 
 #define MAX_STRING_LENGTH       (50)
 #define MAIN_LOOP_SLEEP_TIME_S  (1)
-#define GPIO_PORT       ('A')
-#define GPIO_PIN        (6U)
-#define GPIO_NUMBER     (((GPIO_PORT - 'A') * 32U) + GPIO_PIN)
 #define GENERIC_ERROR   (-1)
 #define FAN_OFF         (0U)
 #define FAN_ON          !FAN_OFF
@@ -63,7 +60,7 @@ volatile static bool IsWorking;
 /*--------------------------------------------------------------------------------------------------
  *  MODULE PROTOTYPES
  *------------------------------------------------------------------------------------------------*/
-bool init_gpio(void);
+bool init_gpio(const unsigned int gpio_sysfs_no);
 int read_temp(void);
 void print_syntax(void);
 void signal_handler(int signal);
@@ -73,10 +70,12 @@ void signal_handler(int signal);
  *  PUBLIC FUNCTIONS
  *------------------------------------------------------------------------------------------------*/
 /*
- * @brief Main Aapplication entry function
+ * @brief Main Application entry function
  * @param argc Argument count when calling executable from command prompt
  * @param args Arguments pointer
- * @retval POSIX error codes. 0 is everything ok
+ * @retval POSIX error codes.
+ *         EXIT_SUCCESS (0) application terminated with success
+ *         EXIT_FAILURE (1) application terminated with some failure
  */
 int main(int argc, char **args)
 {
@@ -94,12 +93,12 @@ int main(int argc, char **args)
     }
     else
     {
+        IsWorking = init_gpio(temperature_control.gpio_sysfs_number);
         return EXIT_SUCCESS;
-        IsWorking = init_gpio();
         signal(SIGINT, signal_handler);
         signal(SIGHUP, signal_handler);
 
-        snprintf(gpio_str, MAX_STRING_LENGTH, "/sys/class/gpio/gpio%u/value", GPIO_NUMBER);
+        snprintf(gpio_str, MAX_STRING_LENGTH, "/sys/class/gpio/gpio%u/value", temperature_control.gpio_sysfs_number);
         printf("value_path=%s\n", gpio_str);
         fd = open(gpio_str, O_RDWR);
         while (IsWorking)
@@ -134,17 +133,29 @@ int main(int argc, char **args)
 /*--------------------------------------------------------------------------------------------------
  * MODULE FUNCTIONS
  *------------------------------------------------------------------------------------------------*/
-bool init_gpio(void)
+bool check_gpio_is_exported(const unsigned int gpio_sysfs_no)
+{
+    char gpio_str[MAX_STRING_LENGTH];
+    DIR *gpio_check;
+    bool ret_val = false;
+
+    snprintf(gpio_str, MAX_STRING_LENGTH, "/sys/class/gpio/gpio%u", temperature_control.gpio_sysfs_number);
+    printf("gpio_path=%s\n", gpio_str);
+    if (NULL != opendir(gpio_str))
+    {
+        ret_val = true;
+        closedir(gpio_check);
+    }
+    return (ret_val);
+
+}
+bool init_gpio(const unsigned int gpio_sysfs_no)
 {
     int init_fd;
     int result = GENERIC_ERROR;
-    DIR *gpio_check;
     char gpio_str[MAX_STRING_LENGTH];
     int str_length;
 
-    snprintf(gpio_str, MAX_STRING_LENGTH, "/sys/class/gpio/gpio%u", GPIO_NUMBER);
-    printf("gpio_path=%s\n", gpio_str);
-    gpio_check = opendir(gpio_str);
 
     if (NULL == gpio_check)
     {
@@ -180,7 +191,6 @@ bool init_gpio(void)
         printf("GPIO already initalised. Continue to work.\n");
         result = 0U;
     }
-    closedir(gpio_check);
     if (GENERIC_ERROR == result)
     {
         printf("GPIO Init failed.\n");

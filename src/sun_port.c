@@ -24,6 +24,9 @@
 /*--------------------------------------------------------------------------------------------------
  *  MODULE DEFINES
  *------------------------------------------------------------------------------------------------*/
+#define GPIO_PORT       ('A')
+#define GPIO_PIN        (6U)
+#define GPIO_NUMBER     (((GPIO_PORT - 'A') * 32U) + GPIO_PIN)
 
 /*
  * @brief   Argument count includes command too.
