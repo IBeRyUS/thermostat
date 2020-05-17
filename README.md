@@ -16,7 +16,7 @@ Add the temperature() function to the .bashrc file before PS1 assignments. After
 temperature()
 {
    SocTemp=`cat /etc/armbianmonitor/datasources/soctemp`
-   awk '{printf ("%0.1f",$1/1000); }' <<<${SocTemp}
+   awk '{printf ("%0.1f",$1/1000); }' <<< ${SocTemp}
 }
 ``` 
 
@@ -43,7 +43,7 @@ if [ "$color_prompt" = yes ]; then
     PS1="$PS1"'\n'                                  # new line
     PS1="$PS1"'\$ '                                 # prompt: always $
 else
-    PS1='${debian_chroot:+($debian_chroot)}'  		# chroot
+    PS1='${debian_chroot:+($debian_chroot)}'        # chroot
     PS1="$PS1"'\u@\h '                              # user@host<space>
     PS1="$PS1"'`temperature` '                      # show Temperature
     PS1="$PS1"'\w'                                  # current working directory

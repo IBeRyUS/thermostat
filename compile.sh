@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e 
 soc_name=$(cat /proc/cpuinfo | grep '^Hardware' | head -n1 | awk '{print tolower(substr($3,1,3))}')
 #soc_name="sun"
 C_COMPILER_FLAGS="-std=c11 -O0 -g3 -Wall -Wfatal-errors -c -fmessage-length=0 -fPIC"

@@ -27,15 +27,15 @@
 
 typedef struct {
     unsigned int gpioSysFsNumber;
-    int hystLowTemp;
-    int hystHighTemp;
+    unsigned int hystLowTemp;
+    unsigned int hystHighTemp;
 } temperatureControl_t;
 
 /*--------------------------------------------------------------------------------------------------
  *  EXPORTED VARIABLES
  *------------------------------------------------------------------------------------------------*/
 
-bool    socPort_parseArguments(int argc, char **args, temperatureControl_t* out_params);
+bool    socPort_parseArguments(int argc, char **args, temperatureControl_t *const out_params);
 char*   socPort_getHelpString(void);
 
 #endif /* SRC_SOC_FUNCTIONS_H_ */

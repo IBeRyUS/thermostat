@@ -58,7 +58,7 @@ fi
 temperature()
 {
    SocTemp=`cat /etc/armbianmonitor/datasources/soctemp`
-   awk '{printf ("%0.1f",$1/1000); }' <<<${SocTemp}
+   awk '{printf ("%0.1f",$1/1000); }' <<< ${SocTemp}
 }
 
 if [ "$color_prompt" = yes ]; then

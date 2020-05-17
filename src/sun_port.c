@@ -22,10 +22,24 @@
 #include "soc_port.h"
 
 /*--------------------------------------------------------------------------------------------------
- *  MODULE VARIABLES
+ *  MODULE DEFINES
  *------------------------------------------------------------------------------------------------*/
 
-static const int g_ArgumentCount = 4;
+/*
+ * @brief   Argument count includes command too.
+ *          Calling $ ./thermostat A 6 35.0 36.0 will have 4 arguments.
+ *          When porting to new SOC don't forget to count command itself count as argument.
+ *          Param1 = ./build/thermostat
+ *          Param2 = A
+ *          Param3 = 6
+ *          Param4 = 35.0
+ *          Param5 = 36.0
+ */
+#define ARGUMENT_COUNT      (5)
+
+/*--------------------------------------------------------------------------------------------------
+ *  MODULE VARIABLES
+ *------------------------------------------------------------------------------------------------*/
 
 static const char* g_HelpString = "********** Command line syntax for SunXi SoC(mostly Other Pi's) boards *********\n"
                           "* ./thermostat PORT_NO PIN_NUMBER FAN_OFF_TEMPERATURE FAN_ON_TEMPERATURE       *\n"

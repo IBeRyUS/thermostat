@@ -94,6 +94,7 @@ int main(int argc, char **args)
     }
     else
     {
+        return EXIT_SUCCESS;
         IsWorking = init_gpio();
         signal(SIGINT, signal_handler);
         signal(SIGHUP, signal_handler);
