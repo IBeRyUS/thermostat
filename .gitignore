@@ -53,6 +53,4 @@ dkms.conf
 /Debug/
 
 # Eclipse project files
-.cproject
-.project
 .settings/
