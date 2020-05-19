@@ -56,7 +56,7 @@ static const char* HelpString = "********* Command line syntax for Broadcom SoC(
 /*--------------------------------------------------------------------------------------------------
  *  PUBLIC FUNCTIONS
  *------------------------------------------------------------------------------------------------*/
-bool socPort_parseArguments(int argc, char **args, temperatureControl_t *const out_params)
+bool socPort_parseArguments(int argc, char* args[], temperatureControl_t *const out_params)
 {
     bool ret_val = false;
 

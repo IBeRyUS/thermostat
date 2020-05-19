@@ -35,7 +35,7 @@ typedef struct {
  *  EXPORTED VARIABLES
  *------------------------------------------------------------------------------------------------*/
 
-bool    socPort_parseArguments(int argc, char **args, temperatureControl_t *const out_params);
+bool    socPort_parseArguments(int argc, char* args[], temperatureControl_t *const out_params);
 char*   socPort_getHelpString(void);
 
 #endif /* SRC_SOC_FUNCTIONS_H_ */

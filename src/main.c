@@ -55,7 +55,7 @@
 /*--------------------------------------------------------------------------------------------------
  *  MODULE VARIABLES
  *------------------------------------------------------------------------------------------------*/
-volatile static bool IsWorking;
+static volatile bool IsWorking;
 //temperatureControl_t
 /*--------------------------------------------------------------------------------------------------
  *  MODULE PROTOTYPES
@@ -77,7 +77,7 @@ void signal_handler(int signal);
  *         EXIT_SUCCESS (0) application terminated with success
  *         EXIT_FAILURE (1) application terminated with some failure
  */
-int main(int argc, char **args)
+int main(int argc, char* args[])
 {
     char gpio_str[MAX_STRING_LENGTH];
     int ret_val = EXIT_SUCCESS;
@@ -139,9 +139,10 @@ bool check_gpio_is_exported(const unsigned int gpio_sysfs_no)
     DIR *gpio_check;
     bool ret_val = false;
 
-    snprintf(gpio_str, MAX_STRING_LENGTH, "/sys/class/gpio/gpio%u", temperature_control.gpio_sysfs_number);
+    snprintf(gpio_str, MAX_STRING_LENGTH, "/sys/class/gpio/gpio%u", gpio_sysfs_no);
     printf("gpio_path=%s\n", gpio_str);
-    if (NULL != opendir(gpio_str))
+    gpio_check = opendir(gpio_str);
+    if (NULL != gpio_check)
     {
         ret_val = true;
         closedir(gpio_check);
@@ -157,7 +158,7 @@ bool init_gpio(const unsigned int gpio_sysfs_no)
     int str_length;
 
 
-    if (NULL == gpio_check)
+    if (false == check_gpio_is_exported(gpio_sysfs_no))
     {
         //gpio not initialised
         printf("GPIO Not initalised. Started to initialise.\n");
@@ -165,12 +166,12 @@ bool init_gpio(const unsigned int gpio_sysfs_no)
         printf("init_fd=%d\n", init_fd);
         if (GENERIC_ERROR != init_fd)
         {
-            str_length = snprintf(gpio_str, MAX_STRING_LENGTH, "%u", GPIO_NUMBER);
+            str_length = snprintf(gpio_str, MAX_STRING_LENGTH, "%u", gpio_sysfs_no);
             result = write(init_fd, gpio_str, str_length);
             printf("init_fd write result=%d\n", result);
             close(init_fd);
             sleep(1);
-            snprintf(gpio_str, MAX_STRING_LENGTH, "/sys/class/gpio/gpio%u/direction", GPIO_NUMBER);
+            snprintf(gpio_str, MAX_STRING_LENGTH, "/sys/class/gpio/gpio%u/direction", gpio_sysfs_no);
             printf("gpio_path=%s open to write ", gpio_str);
             init_fd = open(gpio_str, O_WRONLY);
             if (GENERIC_ERROR != init_fd)
@@ -232,6 +233,7 @@ void print_syntax(void)
 
 void signal_handler(int signal)
 {
+    (void)(signal);
     IsWorking = false;
 }
 
