@@ -43,7 +43,7 @@ esac
 # uncomment for a colored prompt, if the terminal has the capability; turned
 # off by default to not distract the user: the focus in a terminal window
 # should be on the output of commands, not on the prompt
-#force_color_prompt=yes
+force_color_prompt=yes
 
 if [ -n "$force_color_prompt" ]; then
     if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
@@ -57,7 +57,7 @@ if [ -n "$force_color_prompt" ]; then
 fi
 temperature()
 {
-   SocTemp=`cat /etc/armbianmonitor/datasources/soctemp`
+   SocTemp=`cat /sys/devices/virtual/thermal/thermal_zone0/temp`
    awk '{printf ("%0.1f",$1/1000); }' <<< ${SocTemp}
 }
 
@@ -81,6 +81,7 @@ else
     PS1="$PS1"'\$ '                                 # prompt: always $
 fi
 
+unset color_prompt force_color_prompt
 
 # If this is an xterm set the title to user@host:dir
 case "$TERM" in

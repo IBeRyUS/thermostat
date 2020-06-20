@@ -43,10 +43,10 @@
  *------------------------------------------------------------------------------------------------*/
 
 #define MAX_STRING_LENGTH       (50)
-#define MAIN_LOOP_SLEEP_TIME_S  (1)
-#define GENERIC_ERROR   (-1)
-#define FAN_OFF         (0U)
-#define FAN_ON          !FAN_OFF
+#define MAIN_LOOP_SLEEP_TIME_S  (1U)
+#define GENERIC_ERROR   		(-1)
+#define FAN_OFF         		(0U)
+#define FAN_ON          		(1U)
 
 /*--------------------------------------------------------------------------------------------------
  *  MODUL TIP TANIMLARI (MODULE TYPEDEFS)
@@ -60,10 +60,12 @@ static volatile bool IsWorking;
 /*--------------------------------------------------------------------------------------------------
  *  MODULE PROTOTYPES
  *------------------------------------------------------------------------------------------------*/
-bool init_gpio(const unsigned int gpio_sysfs_no);
-int read_temp(void);
-void print_syntax(void);
-void signal_handler(int signal);
+static bool check_is_gpio_exported(const unsigned int gpio_sysfs_no);
+static bool init_gpio(const unsigned int gpio_sysfs_no);
+static int read_temp(void);
+static void fan_control(const unsigned int gpio_sysfs_no, const unsigned int new_status);
+static void print_syntax(void);
+static void signal_handler(int signal);
 //void
 
 /*--------------------------------------------------------------------------------------------------
@@ -77,12 +79,9 @@ void signal_handler(int signal);
  *         EXIT_SUCCESS (0) application terminated with success
  *         EXIT_FAILURE (1) application terminated with some failure
  */
-int main(int argc, char* args[])
+int main(int argc, char *args[])
 {
-    char gpio_str[MAX_STRING_LENGTH];
     int ret_val = EXIT_SUCCESS;
-    int fd;
-    int temperature;
     temperatureControl_t temperature_control;
     unsigned int fan_status = FAN_OFF;
 
@@ -94,38 +93,34 @@ int main(int argc, char* args[])
     else
     {
         IsWorking = init_gpio(temperature_control.gpio_sysfs_number);
-        return EXIT_SUCCESS;
         signal(SIGINT, signal_handler);
         signal(SIGHUP, signal_handler);
 
-        snprintf(gpio_str, MAX_STRING_LENGTH, "/sys/class/gpio/gpio%u/value", temperature_control.gpio_sysfs_number);
-        printf("value_path=%s\n", gpio_str);
-        fd = open(gpio_str, O_RDWR);
         while (IsWorking)
         {
-            temperature = read_temp();
-            if (temperature > 38000)
+            const int temperature = read_temp();
+            if (temperature > temperature_control.high_temperature)
             {
                 if (FAN_OFF == fan_status)
                 {
-                    write(fd, "1", 1);
                     fan_status = FAN_ON;
+                    fan_control(temperature_control.gpio_sysfs_number, fan_status);
                     printf("Fan on temp = %d\n", temperature);
                 }
             }
-            else if (temperature < 36000)
+            else if (temperature < temperature_control.low_temperature)
             {
                 if (FAN_OFF != fan_status)
                 {
-                    write(fd, "0", 1U);
                     fan_status = FAN_OFF;
+                    fan_control(temperature_control.gpio_sysfs_number, fan_status);
                     printf("Fan off temp = %d\n", temperature);
                 }
             }
-            sleep(1U);
+            sleep(MAIN_LOOP_SLEEP_TIME_S);
         }
+        fan_control(temperature_control.gpio_sysfs_number, FAN_OFF);
         printf("Closing thermal control\n");
-        close(fd);
     }
     return (ret_val);
 }
@@ -133,7 +128,7 @@ int main(int argc, char* args[])
 /*--------------------------------------------------------------------------------------------------
  * MODULE FUNCTIONS
  *------------------------------------------------------------------------------------------------*/
-bool check_gpio_is_exported(const unsigned int gpio_sysfs_no)
+static bool check_is_gpio_exported(const unsigned int gpio_sysfs_no)
 {
     char gpio_str[MAX_STRING_LENGTH];
     DIR *gpio_check;
@@ -150,63 +145,75 @@ bool check_gpio_is_exported(const unsigned int gpio_sysfs_no)
     return (ret_val);
 
 }
-bool init_gpio(const unsigned int gpio_sysfs_no)
+static bool init_gpio(const unsigned int gpio_sysfs_no)
 {
     int init_fd;
-    int result = GENERIC_ERROR;
+    bool result = true;
     char gpio_str[MAX_STRING_LENGTH];
     int str_length;
+    int file_results;
 
-
-    if (false == check_gpio_is_exported(gpio_sysfs_no))
+    printf("Start GPIO Export.\n");
+    if (false == check_is_gpio_exported(gpio_sysfs_no))
     {
-        //gpio not initialised
-        printf("GPIO Not initalised. Started to initialise.\n");
+        // gpio not exported
         init_fd = open("/sys/class/gpio/export", O_WRONLY);
-        printf("init_fd=%d\n", init_fd);
         if (GENERIC_ERROR != init_fd)
         {
             str_length = snprintf(gpio_str, MAX_STRING_LENGTH, "%u", gpio_sysfs_no);
-            result = write(init_fd, gpio_str, str_length);
-            printf("init_fd write result=%d\n", result);
+            file_results = write(init_fd, gpio_str, str_length);
+            printf("Export GPIO stage ok. Write to export result=%d\n", file_results);
             close(init_fd);
             sleep(1);
-            snprintf(gpio_str, MAX_STRING_LENGTH, "/sys/class/gpio/gpio%u/direction", gpio_sysfs_no);
-            printf("gpio_path=%s open to write ", gpio_str);
-            init_fd = open(gpio_str, O_WRONLY);
-            if (GENERIC_ERROR != init_fd)
-            {
-                printf("OK\n");
-                result = write(init_fd, "out", 3);
-                close(init_fd);
-            }
-            else
-            {
-                printf("NOT OK\n");
-            }
-
+        }
+        else
+        {
+            printf("Export GPIO stage failed\n");
+            result = false;
         }
     }
     else
     {
-        printf("GPIO already initalised. Continue to work.\n");
-        result = 0U;
+        printf("GPIO Export ok.\n");
     }
-    if (GENERIC_ERROR == result)
+
+    if (false != result)
     {
-        printf("GPIO Init failed.\n");
+        printf("Start setting GPIO direction to OUT.\n");
+        snprintf(gpio_str, MAX_STRING_LENGTH, "/sys/class/gpio/gpio%u/direction", gpio_sysfs_no);
+        init_fd = open(gpio_str, O_WRONLY);
+        if (GENERIC_ERROR != init_fd)
+        {
+            file_results = write(init_fd, "out", 3);
+            if (3 == file_results)
+            {
+                printf("GPIO direction set OK.\n");
+            }
+            else
+            {
+                printf("GPIO direction set NOK. result=%d\n", file_results);
+                result = false;
+            }
+            close(init_fd);
+        }
+        else
+        {
+            printf("GPIO Direction file open error. Path = %s\n", gpio_str);
+            result = false;
+        }
     }
     return (result);
 }
 
-int read_temp(void)
+static int read_temp(void)
 {
     char gpio_str[MAX_STRING_LENGTH];
     char c;
     int temperature_fd;
     int pos = 0U;
 
-    temperature_fd = open("/sys/devices/virtual/thermal/thermal_zone0/temp", O_RDONLY);
+    temperature_fd = open("/sys/devices/virtual/thermal/thermal_zone0/temp",
+    O_RDONLY);
 
     while (true)
     {
@@ -225,15 +232,34 @@ int read_temp(void)
     return (atoi(gpio_str));
 }
 
-void print_syntax(void)
+static void fan_control(const unsigned int gpio_sysfs_no, const unsigned int new_status)
+{
+    int fd;
+    int str_length;
+    char gpio_str[MAX_STRING_LENGTH];
+
+    snprintf(gpio_str, MAX_STRING_LENGTH, "/sys/class/gpio/gpio%u/value", gpio_sysfs_no);
+    fd = open(gpio_str, O_RDWR);
+    if (GENERIC_ERROR != fd)
+    {
+        str_length = snprintf(gpio_str, MAX_STRING_LENGTH, "%d", new_status);
+        write(fd, gpio_str, str_length);
+        close(fd);
+    }
+    else
+    {
+        printf("GPIO write value failed. path=%s value=%d\n", gpio_str, new_status);
+    }
+}
+
+static void print_syntax(void)
 {
     printf("%s", socPort_getHelpString());
 }
 
-
-void signal_handler(int signal)
+static void signal_handler(int signal)
 {
-    (void)(signal);
+    (void) (signal);
     IsWorking = false;
 }
 

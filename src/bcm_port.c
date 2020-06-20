@@ -63,18 +63,18 @@ bool socPort_parseArguments(int argc, char* args[], temperatureControl_t *const 
     if (ARGUMENT_COUNT == argc)
     {
         const unsigned int temp_sysfs_number = strtoul(args[1], NULL, 0);
-        const unsigned int temp_low_temperature  = (unsigned int)(strtof(args[2], NULL) * 1000);
-        const unsigned int temp_high_temperature = (unsigned int)(strtof(args[3], NULL) * 1000);
+        const int temp_low_temperature  = (int)(strtof(args[2], NULL) * 1000);
+        const int temp_high_temperature = (int)(strtof(args[3], NULL) * 1000);
 
         if ((INVALID_VALUE != temp_sysfs_number) &&
             (INVALID_VALUE != temp_low_temperature) &&
             (INVALID_VALUE != temp_high_temperature) &&
             (temp_low_temperature != temp_high_temperature) &&
             (temp_low_temperature < (temp_high_temperature - MIN_HYSTERESIS_GAP))
-            )
+           )
         {
             /* Arguments are OK */
-            out_params->gpio_sysfs_number = temp_sysfs_number;
+            out_params->gpio_sysfs_number   = temp_sysfs_number;
             out_params->low_temperature     = temp_low_temperature;
             out_params->high_temperature    = temp_high_temperature;
             ret_val = true;

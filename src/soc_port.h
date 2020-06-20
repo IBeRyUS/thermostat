@@ -27,8 +27,8 @@
 
 typedef struct {
     unsigned int gpio_sysfs_number;
-    unsigned int low_temperature;
-    unsigned int high_temperature;
+    int low_temperature;
+    int high_temperature;
 } temperatureControl_t;
 
 /*--------------------------------------------------------------------------------------------------
